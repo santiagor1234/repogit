@@ -43,10 +43,16 @@ BUSINESS_PHONE = os.getenv("BUSINESS_PHONE", "+57 300 000 0000")
 
 # Página genérica de reservas — ver automations/telegram-bot/README.md.
 BOOKING_BASE_URL = os.getenv("BOOKING_URL") or "https://claude.ai/code/artifact/7607c251-5762-4c64-9c43-885a0ee90c26"
+# URL pública de automations/booking-api (Render, etc.) una vez desplegada — sin esto,
+# la web de reservas queda en "vista previa" y no guarda citas de verdad.
+BOOKING_API_URL = os.getenv("BOOKING_API_URL")
+
 BOOKING_URL = (
     f"{BOOKING_BASE_URL}?business={quote(BUSINESS_NAME)}"
     f"&phone={quote(BUSINESS_PHONE)}&address={quote(BUSINESS_ADDRESS)}"
 )
+if BOOKING_API_URL:
+    BOOKING_URL += f"&api={quote(BOOKING_API_URL)}"
 MAPS_URL = f"https://www.google.com/maps/search/?api=1&query={quote(BUSINESS_ADDRESS)}"
 
 MENU_KEYBOARD = {

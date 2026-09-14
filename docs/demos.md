@@ -36,3 +36,5 @@ Cada demo tiene su propio `README.md` con el detalle de cómo llevarla a producc
 ## Probar con un chat real
 
 `automations/telegram-bot/` conecta la misma lógica de `ai-dm-autoresponder` a un bot de Telegram de verdad (setup en su README, vía @BotFather, sin necesidad de servidor público). Es el paso intermedio antes de WhatsApp real: mismo motor, canal real, cero fricción de configuración.
+
+El bot muestra un menú de botones (Agendar cita / Servicios / Horario / Ubicación) en vez de flujo de texto libre para citas — "Agendar cita" abre una web de reservas genérica (publicada como Claude Artifact, reutilizable para cualquier cliente vía `?business=&phone=&address=`) respaldada por `automations/booking-api/` (FastAPI + SQLite, desplegable gratis en Render — ver su README). Sin la API desplegada, la web queda en "vista previa" (no guarda nada real, y lo avisa en pantalla).
