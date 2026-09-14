@@ -10,10 +10,13 @@ La versión "en vivo" de las tres demos de mensajería (`ai-dm-autoresponder`, `
 
 ## Cómo funciona la conversación
 
+- **Saludo o `/start`:** muestra un menú de botones — 📅 Agendar cita, 🛠️ Servicios, 🕐 Horario, 📍 Ubicación.
+- **📅 Agendar cita** (botón de tipo URL): abre la web de reservas real, servida por `automations/booking-api/` — no por texto en el chat. Ver ese README para cómo desplegarla.
+- **📍 Ubicación** (botón de tipo URL): abre Google Maps con la dirección de `.env`.
+- **🛠️ Servicios / 🕐 Horario** (botones con respuesta en el chat): el bot contesta con texto genérico (`router.services_text()` / `hours_text()`).
 - **Pedido:** decís "quiero hacer un pedido" (te muestra el menú) o directo lo que querés con cantidad, ej. "2 empanadas y un café" (lo agrega al carrito sin preguntar nada más). Podés seguir agregando en varios mensajes; el bot recuerda el carrito. Escribí **"eso es todo"** para confirmar y guardar el pedido.
-- **Cita:** decís "quiero agendar una cita" (o "agendar"/"turno"/"reservar hora"). Si no decís cuándo, te pregunta el día; en cuanto detecta una fecha (y opcionalmente hora), busca el espacio libre más cercano y agenda — sin doble-booking, porque usa el mismo calendario (`citas-booking/citas.db`) que la demo simulada.
 - **Cualquier otra cosa:** cae en atención general (clasifica lead/pregunta/spam y responde con IA), igual que `ai-dm-autoresponder`.
-- **"cancelar"** en cualquier momento aborta el pedido/cita en curso.
+- **"cancelar"** en cualquier momento aborta el pedido en curso.
 
 ## Probarlo sin Telegram (más rápido para iterar)
 
@@ -34,7 +37,7 @@ Te deja escribir mensajes directo en la terminal como si fueras el cliente, sin 
    ```
    ! open -e /Users/santiagorodriguezmartinez/automatizaciones-project/.env
    ```
-   Completa: `TELEGRAM_BOT_TOKEN=tu_token_aqui`
+   Completa: `TELEGRAM_BOT_TOKEN=tu_token_aqui`, y de paso `BUSINESS_NAME`, `BUSINESS_ADDRESS`, `BUSINESS_PHONE` (para personalizar el menú/web), y `BOOKING_API_URL` una vez que despliegues `automations/booking-api/` (ver su README) — sin esa última, "Agendar cita" abre una vista previa que no guarda nada real.
 
 ## Correr el bot
 
@@ -44,13 +47,13 @@ source ../../venv/bin/activate
 python bot.py
 ```
 
-Buscá tu bot en Telegram (por el username) y escribile `/start` para ver el menú de opciones, o directo pedile algo. Los pedidos y citas quedan en las mismas bases de datos que las demos simuladas (`pedidos-catalogo/pedidos.db`, `citas-booking/citas.db`), así que se pueden revisar igual con `sqlite3`.
+Buscá tu bot en Telegram (por el username) y escribile `/start` para ver el menú de opciones, o directo pedile algo. Los pedidos quedan en la misma base que la demo simulada (`pedidos-catalogo/pedidos.db`, revisable con `sqlite3`). Las citas quedan en la base de `automations/booking-api/` (donde esté desplegada — ver `GET /bookings?business=...`), no en `citas-booking/citas.db` (esa es solo de la demo standalone por texto, ya no la usa el bot).
 
 ## Limitaciones conocidas de esta versión de prueba
 
 - La memoria de conversación es en RAM: si reiniciás el bot (`Ctrl+C` y volver a correr), se pierde el estado de conversaciones en curso (no los pedidos/citas ya confirmados, esos quedan en SQLite).
 - La detección de "quiero pedir X" sin decir antes "pedido" requiere que menciones una cantidad explícita (ej. "2 empanadas"), para evitar falsos positivos con palabras del catálogo que se usan en otro contexto (ej. "tengo un café" hablando de tu propio negocio).
-- "cita"/"agendar"/"turno"/"reservar hora" son las palabras que activan el flujo de citas — mencionar una hora suelta (ej. "abro de 8 am a 7 pm") no lo activa, a propósito, para no confundir una descripción de horario con un pedido de cita.
+- "cita"/"agendar"/"turno"/"reservar hora"/"servicios"/"horario"/"ubicación" son las palabras que hacen aparecer el menú de botones — mencionar una hora suelta (ej. "abro de 8 am a 7 pm") no lo activa, a propósito, para no confundir una descripción de horario con un pedido de cita.
 
 ## Llevarlo a WhatsApp real
 

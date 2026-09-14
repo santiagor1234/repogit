@@ -1,10 +1,16 @@
 """
-API de reservas — el backend real detrás de la web de agendamiento
-(`docs/demos.md` / artifact de reservas). Recibe y guarda citas de
-verdad en una base de datos, para que "Agendar cita" en la web y en el
-bot de Telegram apunten al mismo sistema.
+API + web de reservas — el backend real detrás del botón "Agendar cita"
+del bot de Telegram. Sirve la página de reservas (static/index.html) y
+los endpoints que ella misma consume, todo desde el mismo origen.
+
+Importante: la página NO vive en un Claude Artifact aparte — un
+Artifact no puede hacer fetch() a una API externa (su Content Security
+Policy solo permite cargar script/CSS desde un puñado de CDNs, no
+llamadas de datos a cualquier servidor). Por eso la web y la API viven
+juntas acá: mismo origen, sin restricciones de CORS/CSP que sortear.
 
 Endpoints:
+    GET  /                                — la web de reservas (static/index.html)
     GET  /health                          — chequeo de salud
     GET  /availability?business=X&date=Y  — horarios libres/ocupados de un día
     POST /bookings                        — crea una reserva (rechaza si el horario ya está tomado)
@@ -12,6 +18,7 @@ Endpoints:
 
 Uso local:
     uvicorn main:app --reload
+    abrir http://127.0.0.1:8000/?business=Mi+Negocio
 
 En producción (Render, etc.) el comando de arranque es:
     uvicorn main:app --host 0.0.0.0 --port $PORT
@@ -20,23 +27,31 @@ import hashlib
 import os
 import sqlite3
 from datetime import date as date_cls, datetime, timedelta
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 DB_PATH = os.getenv("DB_PATH", "citas.db")
 SLOT_MINUTES = 30
 BUSINESS_HOURS = (9, 17)  # abre 9:00, última cita empieza antes de las 17:00
+STATIC_DIR = Path(__file__).parent / "static"
 
 app = FastAPI(title="Booking API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # la web de reservas se sirve desde el dominio de Claude Artifacts
+    allow_origins=["*"],  # la web ahora es mismo origen; se deja abierto por si algo más la consume
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/")
+def index():
+    return FileResponse(STATIC_DIR / "index.html")
 
 
 def get_db():

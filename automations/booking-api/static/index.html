@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Agenda Rápida</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  :root {
+    --ink: #17203A;
+    --ink-soft: #5B6478;
+    --paper: #EDEFF3;
+    --surface: #FFFFFF;
+    --surface-2: #F5F6F9;
+    --border: #DADFE6;
+    --accent: #1E7F6E;
+    --accent-ink: #0F4A40;
+    --accent-soft: #DCEEE9;
+    --accent-soft-border: #BEDDD5;
+    --danger: #B3492E;
+    --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+    --font-body: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'IBM Plex Mono', 'SF Mono', Menlo, monospace;
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #EDEFF5;
+      --ink-soft: #98A2B8;
+      --paper: #10141F;
+      --surface: #171C2B;
+      --surface-2: #1D2333;
+      --border: #2A3143;
+      --accent: #4FC9AE;
+      --accent-ink: #DFF7F0;
+      --accent-soft: #163830;
+      --accent-soft-border: #235349;
+      --danger: #E38268;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #EDEFF5;
+    --ink-soft: #98A2B8;
+    --paper: #10141F;
+    --surface: #171C2B;
+    --surface-2: #1D2333;
+    --border: #2A3143;
+    --accent: #4FC9AE;
+    --accent-ink: #DFF7F0;
+    --accent-soft: #163830;
+    --accent-soft-border: #235349;
+    --danger: #E38268;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+    padding-inline: 16px;
+    padding-block: 32px 56px;
+    display: flex;
+    justify-content: center;
+  }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+  .page { width: 100%; max-width: 640px; }
+
+  h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
+  .eyebrow {
+    font-family: var(--font-body);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+    background: var(--accent-soft);
+    border: 1px solid var(--accent-soft-border);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+
+  /* ---- header ---- */
+  .business-header { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+  .business-name { font-size: clamp(1.7rem, 5vw, 2.3rem); font-weight: 600; }
+  .business-meta {
+    display: flex; flex-wrap: wrap; gap: 14px;
+    font-size: 0.88rem; color: var(--ink-soft);
+  }
+  .business-meta a { color: inherit; text-decoration: none; border-bottom: 1px solid var(--border); }
+  .business-meta a:hover { border-color: var(--ink-soft); }
+
+  /* ---- stepper ---- */
+  .stepper {
+    display: flex; gap: 4px; margin-bottom: 24px;
+    border: 1px solid var(--border); border-radius: 12px;
+    background: var(--surface); padding: 6px;
+  }
+  .step-pill {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 8px 6px; border-radius: 8px;
+    font-size: 0.78rem; font-weight: 500; color: var(--ink-soft);
+    text-align: center;
+  }
+  .step-pill .num {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--surface-2); color: var(--ink-soft);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 0.7rem; font-family: var(--font-mono); flex: none;
+  }
+  .step-pill[data-state="active"] { background: var(--accent-soft); color: var(--accent-ink); }
+  .step-pill[data-state="active"] .num { background: var(--accent); color: var(--surface); }
+  .step-pill[data-state="done"] .num { background: var(--accent); color: var(--surface); }
+  .step-pill[data-state="done"] { color: var(--ink); }
+
+  .panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 18px;
+  }
+  .panel-title { font-size: 1.3rem; font-weight: 600; }
+  .panel-sub { color: var(--ink-soft); font-size: 0.92rem; margin-top: -10px; }
+
+  /* ---- services ---- */
+  .service-list { display: flex; flex-direction: column; gap: 10px; }
+  .service-card {
+    display: grid; grid-template-columns: 1fr auto; gap: 4px 12px;
+    text-align: left; background: var(--surface-2); border: 1.5px solid var(--border);
+    border-radius: 12px; padding: 14px 16px; cursor: pointer; font-family: inherit; color: inherit;
+  }
+  .service-card:hover { border-color: var(--accent); }
+  .service-card[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+  .service-card .name { font-weight: 600; grid-column: 1; }
+  .service-card .price { font-family: var(--font-mono); font-weight: 500; grid-column: 2; align-self: start; font-variant-numeric: tabular-nums; }
+  .service-card .desc { grid-column: 1 / -1; color: var(--ink-soft); font-size: 0.86rem; }
+  .service-card .duration { grid-column: 1 / -1; color: var(--ink-soft); font-size: 0.78rem; font-family: var(--font-mono); }
+
+  /* ---- date/time ---- */
+  .day-row {
+    display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;
+    scrollbar-width: thin;
+  }
+  .day-chip {
+    flex: none; width: 64px; padding: 10px 4px; border-radius: 10px;
+    border: 1.5px solid var(--border); background: var(--surface-2); color: inherit;
+    font-family: inherit; text-align: center; cursor: pointer;
+  }
+  .day-chip .dow { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-soft); }
+  .day-chip .num { font-family: var(--font-mono); font-size: 1.15rem; font-weight: 500; display: block; margin-top: 2px; }
+  .day-chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+
+  .time-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px; }
+  .time-chip {
+    padding: 9px 4px; border-radius: 8px; border: 1.5px solid var(--border);
+    background: var(--surface-2); color: inherit; font-family: var(--font-mono); font-size: 0.86rem;
+    cursor: pointer; font-variant-numeric: tabular-nums;
+  }
+  .time-chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-ink); }
+  .time-chip:disabled { opacity: 0.35; cursor: not-allowed; text-decoration: line-through; }
+  .no-slots { color: var(--ink-soft); font-size: 0.88rem; }
+
+  /* ---- form ---- */
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label { font-size: 0.82rem; font-weight: 500; color: var(--ink-soft); }
+  .field input, .field textarea {
+    font: inherit; padding: 10px 12px; border-radius: 8px;
+    border: 1.5px solid var(--border); background: var(--surface-2); color: var(--ink);
+  }
+  .field input:focus, .field textarea:focus, .service-card:focus-visible, .day-chip:focus-visible,
+  .time-chip:focus-visible, .btn:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+  .field textarea { resize: vertical; min-height: 64px; }
+
+  /* ---- summary ---- */
+  .summary-box {
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px;
+    padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; font-size: 0.92rem;
+  }
+  .summary-row { display: flex; justify-content: space-between; gap: 12px; }
+  .summary-row .k { color: var(--ink-soft); }
+  .summary-row .v { font-weight: 500; text-align: right; }
+
+  /* ---- buttons ---- */
+  .btn-row { display: flex; gap: 10px; justify-content: space-between; margin-top: 4px; }
+  .btn {
+    font: inherit; font-weight: 600; font-size: 0.92rem; border-radius: 10px;
+    padding: 11px 18px; cursor: pointer; border: 1.5px solid transparent;
+  }
+  .btn-primary { background: var(--accent); color: var(--surface); }
+  .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn-ghost { background: transparent; color: var(--ink-soft); border-color: var(--border); }
+
+  /* ---- confirmation ---- */
+  .confirm-panel { text-align: center; align-items: center; }
+  .confirm-mark {
+    width: 52px; height: 52px; border-radius: 50%; background: var(--accent-soft);
+    color: var(--accent-ink); display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem; border: 1px solid var(--accent-soft-border);
+  }
+  .confirm-code {
+    font-family: var(--font-mono); letter-spacing: 0.08em; font-size: 0.82rem;
+    color: var(--ink-soft); background: var(--surface-2); border: 1px dashed var(--border);
+    border-radius: 8px; padding: 6px 12px; display: inline-block;
+  }
+
+  .error-note {
+    color: var(--danger); font-size: 0.85rem; background: color-mix(in srgb, var(--danger) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+    border-radius: 8px; padding: 8px 12px;
+  }
+
+  footer {
+    text-align: center; color: var(--ink-soft); font-size: 0.78rem; margin-top: 22px;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="business-header">
+    <span class="eyebrow">📅 Reservas en línea</span>
+    <h1 class="business-name" id="business-name">Tu Negocio</h1>
+    <div class="business-meta">
+      <span id="business-phone"></span>
+      <a id="business-map-link" href="#" target="_blank" rel="noopener">📍 <span id="business-address"></span></a>
+    </div>
+  </div>
+
+  <div class="stepper" id="stepper">
+    <div class="step-pill" data-step-pill="1"><span class="num">1</span><span class="label">Servicio</span></div>
+    <div class="step-pill" data-step-pill="2"><span class="num">2</span><span class="label">Fecha y hora</span></div>
+    <div class="step-pill" data-step-pill="3"><span class="num">3</span><span class="label">Tus datos</span></div>
+    <div class="step-pill" data-step-pill="4"><span class="num">4</span><span class="label">Listo</span></div>
+  </div>
+
+  <!-- Step 1: service -->
+  <section class="panel" id="step-1">
+    <div>
+      <h2 class="panel-title">¿Qué querés reservar?</h2>
+      <p class="panel-sub">Elegí el servicio para ver los horarios disponibles.</p>
+    </div>
+    <div class="service-list" id="service-list"></div>
+    <div class="btn-row">
+      <span></span>
+      <button class="btn btn-primary" id="btn-to-2" disabled>Continuar</button>
+    </div>
+  </section>
+
+  <!-- Step 2: date + time -->
+  <section class="panel" id="step-2" hidden>
+    <div>
+      <h2 class="panel-title">Elegí día y hora</h2>
+      <p class="panel-sub" id="service-recap"></p>
+    </div>
+    <p class="error-note" id="availability-error" hidden>No pudimos cargar la disponibilidad, intentá de nuevo.</p>
+    <div class="day-row" id="day-row"></div>
+    <div class="time-grid" id="time-grid"></div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" data-back="1">Atrás</button>
+      <button class="btn btn-primary" id="btn-to-3" disabled>Continuar</button>
+    </div>
+  </section>
+
+  <!-- Step 3: contact -->
+  <section class="panel" id="step-3" hidden>
+    <div>
+      <h2 class="panel-title">Tus datos</h2>
+      <p class="panel-sub">Los usamos solo para confirmar tu cita.</p>
+    </div>
+    <div class="field">
+      <label for="input-name">Nombre completo</label>
+      <input id="input-name" type="text" autocomplete="name" placeholder="Ej. Laura Gómez" />
+    </div>
+    <div class="field">
+      <label for="input-phone">Teléfono / WhatsApp</label>
+      <input id="input-phone" type="tel" autocomplete="tel" placeholder="Ej. 300 123 4567" />
+    </div>
+    <div class="field">
+      <label for="input-note">Nota (opcional)</label>
+      <textarea id="input-note" placeholder="Algo que debamos saber antes de tu cita"></textarea>
+    </div>
+    <div class="summary-box" id="summary-box"></div>
+    <p class="error-note" id="confirm-error" hidden></p>
+    <div class="btn-row">
+      <button class="btn btn-ghost" data-back="2">Atrás</button>
+      <button class="btn btn-primary" id="btn-confirm" disabled>Confirmar cita</button>
+    </div>
+  </section>
+
+  <!-- Step 4: confirmation -->
+  <section class="panel confirm-panel" id="step-4" hidden>
+    <div class="confirm-mark">✓</div>
+    <div>
+      <h2 class="panel-title">¡Cita confirmada!</h2>
+      <p class="panel-sub" id="confirm-text"></p>
+    </div>
+    <div class="summary-box" id="confirm-summary"></div>
+    <span class="confirm-code" id="confirm-code"></span>
+    <div class="btn-row" style="justify-content:center;">
+      <button class="btn btn-ghost" id="btn-restart">Agendar otra cita</button>
+    </div>
+  </section>
+
+  <footer>Sistema de reservas automatizado · sin filas de espera, sin llamadas</footer>
+</div>
+
+<script>
+(function () {
+  var qs = new URLSearchParams(location.search);
+  var business = qs.get('business') || 'Tu Negocio';
+  var phone = qs.get('phone') || '+57 300 000 0000';
+  var address = qs.get('address') || 'Cra 15 #93-47, Bogotá';
+
+  document.getElementById('business-name').textContent = business;
+  document.getElementById('business-phone').textContent = '📞 ' + phone;
+  document.getElementById('business-address').textContent = address;
+  document.getElementById('business-map-link').href =
+    'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(address);
+
+  var SERVICES = [
+    { id: 'basico', name: 'Consulta / servicio básico', duration: 30, price: 40000,
+      desc: 'Ideal para una primera visita o algo puntual.' },
+    { id: 'estandar', name: 'Servicio estándar', duration: 45, price: 70000,
+      desc: 'La opción más pedida: cubre lo esencial completo.' },
+    { id: 'premium', name: 'Servicio premium', duration: 60, price: 120000,
+      desc: 'Atención extendida, con más tiempo dedicado.' }
+  ];
+
+  var DOW = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+  var MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+  function money(n) { return '$' + n.toLocaleString('es-CO'); }
+  function pad(n) { return n < 10 ? '0' + n : '' + n; }
+  function isoDate(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+
+  function businessDays(count) {
+    var days = [];
+    var d = new Date();
+    d.setDate(d.getDate() + 1);
+    while (days.length < count) {
+      if (d.getDay() !== 0 && d.getDay() !== 6) { days.push(new Date(d)); }
+      d.setDate(d.getDate() + 1);
+    }
+    return days;
+  }
+
+  // Mismo origen que la API (esta página la sirve booking-api), así que
+  // las rutas son relativas: sin CORS, sin configurar nada aparte.
+  function fetchSlots(dateStr) {
+    var url = '/availability?business=' + encodeURIComponent(business) + '&date=' + dateStr;
+    return fetch(url).then(function (r) {
+      if (!r.ok) { throw new Error('bad response'); }
+      return r.json();
+    }).then(function (data) {
+      return data.slots.map(function (s) { return { time: s.time, booked: !s.available }; });
+    });
+  }
+
+  var state = { service: null, date: null, time: null };
+
+  // ---- Step 1: services ----
+  var serviceList = document.getElementById('service-list');
+  SERVICES.forEach(function (svc) {
+    var btn = document.createElement('button');
+    btn.className = 'service-card';
+    btn.type = 'button';
+    btn.setAttribute('aria-pressed', 'false');
+    btn.innerHTML =
+      '<span class="name">' + svc.name + '</span>' +
+      '<span class="price">' + money(svc.price) + '</span>' +
+      '<span class="desc">' + svc.desc + '</span>' +
+      '<span class="duration">' + svc.duration + ' min</span>';
+    btn.addEventListener('click', function () {
+      state.service = svc;
+      Array.prototype.forEach.call(serviceList.children, function (c) { c.setAttribute('aria-pressed', 'false'); });
+      btn.setAttribute('aria-pressed', 'true');
+      document.getElementById('btn-to-2').disabled = false;
+    });
+    serviceList.appendChild(btn);
+  });
+
+  // ---- Step 2: date + time ----
+  var dayRow = document.getElementById('day-row');
+  var timeGrid = document.getElementById('time-grid');
+  var availabilityError = document.getElementById('availability-error');
+  var days = businessDays(10);
+
+  days.forEach(function (d) {
+    var chip = document.createElement('button');
+    chip.className = 'day-chip';
+    chip.type = 'button';
+    chip.setAttribute('aria-pressed', 'false');
+    chip.innerHTML = '<span class="dow">' + DOW[d.getDay()] + '</span><span class="num">' + d.getDate() + '</span>';
+    chip.addEventListener('click', function () {
+      state.date = d;
+      state.time = null;
+      document.getElementById('btn-to-3').disabled = true;
+      Array.prototype.forEach.call(dayRow.children, function (c) { c.setAttribute('aria-pressed', 'false'); });
+      chip.setAttribute('aria-pressed', 'true');
+      renderTimeGrid();
+    });
+    dayRow.appendChild(chip);
+  });
+
+  function renderTimeGrid() {
+    availabilityError.hidden = true;
+    timeGrid.innerHTML = '<p class="no-slots">Buscando horarios… (puede tardar unos segundos si el servidor estaba dormido)</p>';
+    var dateStr = isoDate(state.date);
+    fetchSlots(dateStr).then(function (slots) {
+      if (isoDate(state.date) !== dateStr) { return; }
+      timeGrid.innerHTML = '';
+      var anyOpen = slots.some(function (s) { return !s.booked; });
+      if (!anyOpen) {
+        timeGrid.innerHTML = '<p class="no-slots">No quedan horarios ese día, probá otra fecha.</p>';
+        return;
+      }
+      slots.forEach(function (s) {
+        var chip = document.createElement('button');
+        chip.className = 'time-chip';
+        chip.type = 'button';
+        chip.textContent = s.time;
+        chip.disabled = s.booked;
+        chip.setAttribute('aria-pressed', 'false');
+        chip.addEventListener('click', function () {
+          state.time = s.time;
+          Array.prototype.forEach.call(timeGrid.children, function (c) { c.setAttribute && c.setAttribute('aria-pressed', 'false'); });
+          chip.setAttribute('aria-pressed', 'true');
+          document.getElementById('btn-to-3').disabled = false;
+        });
+        timeGrid.appendChild(chip);
+      });
+    }).catch(function () {
+      timeGrid.innerHTML = '';
+      availabilityError.hidden = false;
+    });
+  }
+
+  // ---- Step 3: contact + summary ----
+  var nameInput = document.getElementById('input-name');
+  var phoneInput = document.getElementById('input-phone');
+
+  function fmtDate(d) { return DOW[d.getDay()] + ' ' + d.getDate() + ' ' + MONTHS[d.getMonth()]; }
+
+  function renderSummary(targetId) {
+    var box = document.getElementById(targetId);
+    box.innerHTML =
+      '<div class="summary-row"><span class="k">Negocio</span><span class="v">' + business + '</span></div>' +
+      '<div class="summary-row"><span class="k">Servicio</span><span class="v">' + state.service.name + '</span></div>' +
+      '<div class="summary-row"><span class="k">Fecha</span><span class="v">' + fmtDate(state.date) + '</span></div>' +
+      '<div class="summary-row"><span class="k">Hora</span><span class="v">' + state.time + '</span></div>' +
+      '<div class="summary-row"><span class="k">Precio</span><span class="v">' + money(state.service.price) + '</span></div>';
+  }
+
+  function checkStep3() {
+    document.getElementById('btn-confirm').disabled = !(nameInput.value.trim() && phoneInput.value.trim());
+  }
+  nameInput.addEventListener('input', checkStep3);
+  phoneInput.addEventListener('input', checkStep3);
+
+  // ---- navigation ----
+  function goTo(step) {
+    [1, 2, 3, 4].forEach(function (n) {
+      document.getElementById('step-' + n).hidden = n !== step;
+      var pill = document.querySelector('[data-step-pill="' + n + '"]');
+      pill.setAttribute('data-state', n < step ? 'done' : (n === step ? 'active' : ''));
+    });
+  }
+
+  document.getElementById('btn-to-2').addEventListener('click', function () {
+    document.getElementById('service-recap').textContent =
+      state.service.name + ' · ' + state.service.duration + ' min · ' + money(state.service.price);
+    goTo(2);
+  });
+
+  document.getElementById('btn-to-3').addEventListener('click', function () {
+    renderSummary('summary-box');
+    goTo(3);
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll('[data-back]'), function (b) {
+    b.addEventListener('click', function () { goTo(parseInt(b.getAttribute('data-back'), 10)); });
+  });
+
+  var confirmBtn = document.getElementById('btn-confirm');
+  var confirmError = document.getElementById('confirm-error');
+
+  confirmBtn.addEventListener('click', function () {
+    confirmError.hidden = true;
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Confirmando…';
+
+    fetch('/bookings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        business: business,
+        service: state.service.name,
+        date: isoDate(state.date),
+        time: state.time,
+        client_name: nameInput.value.trim(),
+        phone: phoneInput.value.trim(),
+        note: document.getElementById('input-note').value.trim()
+      })
+    })
+      .then(function (r) {
+        if (r.status === 409) { throw new Error('taken'); }
+        if (!r.ok) { throw new Error('failed'); }
+        return r.json();
+      })
+      .then(function (data) {
+        renderSummary('confirm-summary');
+        document.getElementById('confirm-text').textContent =
+          'Le avisamos a ' + business + '. Te escribimos a ' + phoneInput.value + ' si algo cambia.';
+        document.getElementById('confirm-code').textContent = 'Código de reserva: ' + data.code;
+        goTo(4);
+      })
+      .catch(function (err) {
+        confirmError.hidden = false;
+        confirmError.textContent = err.message === 'taken'
+          ? 'Justo se ocupó ese horario. Volvé a elegir otro.'
+          : 'No pudimos guardar la reserva, intentá de nuevo en un momento.';
+        if (err.message === 'taken') { goTo(2); renderTimeGrid(); }
+      })
+      .finally(function () {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Confirmar cita';
+      });
+  });
+
+  document.getElementById('btn-restart').addEventListener('click', function () {
+    location.reload();
+  });
+
+  goTo(1);
+})();
+</script>
+</body>
+</html>
