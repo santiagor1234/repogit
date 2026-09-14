@@ -1,0 +1,4 @@
+playwright
+imageio-ffmpeg
+requests
+python-dotenv
