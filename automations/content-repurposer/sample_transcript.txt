@@ -1,0 +1,11 @@
+Hoy quiero hablarte de algo que nadie te cuenta cuando empiezas a vender automatizaciones. El 90% de los negocios que te van a decir que no, no es porque no les interese, es porque no entienden qué les estás ofreciendo. Ese es el verdadero problema, no el precio.
+
+Cuando arranqué, cometí un error gigante: le mandaba a la gente un documento técnico explicando el workflow, con nodos, con APIs, con todo el detalle. Nadie entendía nada y nadie compraba. El día que cambié eso por un video de 30 segundos mostrando el antes y el después, todo cambió.
+
+Aquí va un dato que casi nadie menciona: no necesitas sonar como experto técnico para vender automatización, necesitas sonar como alguien que entiende el negocio del cliente. Eso es lo que realmente convierte.
+
+Otra cosa que aprendí a la mala: si tu primer mensaje a un prospecto habla de "inteligencia artificial" o "workflows", ya perdiste su atención. Habla de lo que a ellos les importa: tiempo, dinero, clientes que se pierden por no responder rápido.
+
+Y el secreto que nadie te dice: la automatización más rentable casi nunca es la más compleja. Muchas veces es un simple bot que responde mensajes al instante. Eso, para un negocio que pierde ventas por no contestar a tiempo, vale oro.
+
+Si estás empezando en esto, mi consejo es: construye 2 o 3 demos que puedas mostrar en 30 segundos, no expliques la tecnología, muestra el resultado. Eso es lo que realmente vende.

@@ -1,0 +1,38 @@
+[
+  {
+    "platform": "Instagram",
+    "business": "Inmobiliaria Vista Real",
+    "sender": "Camila R.",
+    "text": "Hola! vi el depa de la publicación de ayer, ¿sigue disponible y cuánto es el precio?"
+  },
+  {
+    "platform": "WhatsApp",
+    "business": "Clínica Dental Sonrisa",
+    "sender": "Jorge M.",
+    "text": "Buenas, ¿tienen turno para una limpieza esta semana? ¿Cuál es el horario de atención?"
+  },
+  {
+    "platform": "Instagram",
+    "business": "Tienda Urban Fit",
+    "sender": "Andrea_23",
+    "text": "Me encantan sus productos!! síganme de vuelta plis 🙏🙏"
+  },
+  {
+    "platform": "WhatsApp",
+    "business": "Coaching Negocios Pro",
+    "sender": "Diego L.",
+    "text": "Hola, quiero info del programa de mentoría, cuánto cuesta y qué incluye"
+  },
+  {
+    "platform": "Instagram",
+    "business": "Restaurante El Fogón",
+    "sender": "Marta S.",
+    "text": "Hacen reservas para 8 personas el sábado por la noche?"
+  },
+  {
+    "platform": "WhatsApp",
+    "business": "Gym PowerZone",
+    "sender": "Luis P.",
+    "text": "Cuánto cuesta la membresía mensual y si tienen clase de prueba gratis"
+  }
+]
