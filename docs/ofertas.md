@@ -11,8 +11,8 @@
 
 ## Pricing
 
-_Pendiente definir. Anotar aquí cotizaciones reales que se hagan a clientes para ir calibrando precios._
+Marco inicial (setup + mensualidad) en `docs/estrategia-ventas.md` sección 7. Anotar aquí cotizaciones reales que se hagan a clientes para ir calibrando precios.
 
 ## Notas de posicionamiento
 
-_Pendiente. Ir registrando qué tipo de contenido/oferta genera más respuesta en redes para afinar el mensaje._
+Ver `docs/estrategia-ventas.md` para la estrategia completa de venta por redes (contenido, embudo, outreach). Ir registrando acá qué tipo de contenido/oferta genera más respuesta en redes para afinar el mensaje.
