@@ -7,10 +7,13 @@ Separado de `bot.py` (que solo habla con la API de Telegram) para poder
 probarlo por consola sin necesitar un bot real — ver `if __name__ ==
 "__main__"` al final.
 """
+import os
 import re
 import sys
 from datetime import date
 from pathlib import Path
+
+from dotenv import load_dotenv
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 from common.appointments import (  # noqa: E402
@@ -24,6 +27,10 @@ from common.appointments import (  # noqa: E402
 from common.inbox import classify, draft_reply  # noqa: E402
 from common.orders import catalog_listing, ensure_orders_db, format_money, parse_order, save_order  # noqa: E402
 from sessions import get_session, reset_session  # noqa: E402
+
+load_dotenv()
+
+BUSINESS_NAME = os.getenv("BUSINESS_NAME", "Nuestro negocio")
 
 ORDERS_DB = Path(__file__).resolve().parents[1] / "pedidos-catalogo" / "pedidos.db"
 APPOINTMENTS_DB = Path(__file__).resolve().parents[1] / "citas-booking" / "citas.db"
@@ -92,7 +99,7 @@ def handle_message(chat_id, sender, contact, text) -> str:
         return _handle_cita(chat_id, sender, contact, text, session)
 
     label = classify(text)
-    return draft_reply("Nuestro negocio", sender, text, label)
+    return draft_reply(BUSINESS_NAME, sender, text, label)
 
 
 def _pedido_menu_reply(prefix: str) -> str:
@@ -133,20 +140,20 @@ def _handle_cita(chat_id, sender, contact, text, session):
         session["preferred_time"] = preferred_time
 
     if session["preferred_date"] is None:
-        return f"¡Hola {sender}! Claro, te ayudo a agendar. ¿Qué día te gustaría la cita?"
+        return f"¡Hola {sender}! Claro, te ayudo a agendar tu cita en {BUSINESS_NAME}. ¿Qué día te gustaría?"
 
     conn = _appointments_db()
     slot = find_best_slot(conn, session["preferred_date"], session["preferred_time"])
     if slot is None:
         session["preferred_date"] = None
         session["preferred_time"] = None
-        return "No encontramos disponibilidad para esa fecha. ¿Tenés otro día en mente?"
+        return f"No encontramos disponibilidad en {BUSINESS_NAME} para esa fecha. ¿Tenés otro día en mente?"
 
     slot_id, slot_date, slot_time = slot
     book_slot(conn, slot, sender, contact, text)
     d = date.fromisoformat(slot_date)
     reset_session(chat_id)
-    return f"¡Listo {sender}! Quedaste agendado para el {format_date_es(d)} a las {slot_time}. Te esperamos 🙌"
+    return f"¡Listo {sender}! Quedaste agendado en {BUSINESS_NAME} para el {format_date_es(d)} a las {slot_time}. Te esperamos 🙌"
 
 
 if __name__ == "__main__":
