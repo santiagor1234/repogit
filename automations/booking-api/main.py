@@ -16,6 +16,10 @@ Endpoints:
     POST /bookings                        — crea una reserva (rechaza si el horario ya está tomado)
     GET  /bookings?business=X             — lista las reservas de un negocio (sin auth todavía — ver README)
 
+Cada reserva creada también se manda (best-effort, sin bloquear si falla) a un
+Google Sheet vía un webhook de Apps Script, si GOOGLE_SHEETS_WEBHOOK_URL está
+configurada — ver README para el setup paso a paso.
+
 Uso local:
     uvicorn main:app --reload
     abrir http://127.0.0.1:8000/?business=Mi+Negocio
@@ -29,6 +33,7 @@ import sqlite3
 from datetime import date as date_cls, datetime, timedelta
 from pathlib import Path
 
+import requests
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -38,6 +43,7 @@ DB_PATH = os.getenv("DB_PATH", "citas.db")
 SLOT_MINUTES = 30
 BUSINESS_HOURS = (9, 17)  # abre 9:00, última cita empieza antes de las 17:00
 STATIC_DIR = Path(__file__).parent / "static"
+GOOGLE_SHEETS_WEBHOOK_URL = os.getenv("GOOGLE_SHEETS_WEBHOOK_URL")
 
 app = FastAPI(title="Booking API")
 
@@ -85,6 +91,17 @@ def slots_for_date(d: date_cls):
         slots.append(t.strftime("%H:%M"))
         t += timedelta(minutes=SLOT_MINUTES)
     return slots
+
+
+def push_to_sheet(row: dict):
+    if not GOOGLE_SHEETS_WEBHOOK_URL:
+        return
+    try:
+        requests.post(GOOGLE_SHEETS_WEBHOOK_URL, json=row, timeout=10)
+    except requests.exceptions.RequestException as exc:
+        # No dejamos que un problema con Sheets tumbe la reserva -- ya quedó
+        # guardada en la base de datos, que es la fuente de verdad.
+        print(f"[aviso] no se pudo escribir en Google Sheets: {exc}")
 
 
 class BookingIn(BaseModel):
@@ -149,6 +166,21 @@ def create_booking(b: BookingIn):
         (b.business, b.service, b.date, b.time, b.client_name, b.phone, b.note, code, datetime.now().isoformat()),
     )
     conn.commit()
+
+    push_to_sheet(
+        {
+            "date": b.date,
+            "time": b.time,
+            "service": b.service,
+            "client_name": b.client_name,
+            "phone": b.phone,
+            "note": b.note,
+            "code": code,
+            "business": b.business,
+            "created_at": datetime.now().isoformat(),
+        }
+    )
+
     return {"ok": True, "code": code}
 
 

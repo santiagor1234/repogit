@@ -9,3 +9,5 @@ services:
     envVars:
       - key: DB_PATH
         value: citas.db
+      - key: GOOGLE_SHEETS_WEBHOOK_URL
+        sync: false
