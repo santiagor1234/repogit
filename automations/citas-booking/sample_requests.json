@@ -1,0 +1,22 @@
+[
+  {
+    "client_name": "Valentina G.",
+    "contact": "+57 300 555 1234",
+    "text": "Hola, quiero una cita para el martes a las 3 de la tarde"
+  },
+  {
+    "client_name": "Andrés F.",
+    "contact": "+57 310 222 9988",
+    "text": "Necesito agendar para mañana, cualquier hora en la mañana"
+  },
+  {
+    "client_name": "Paula R.",
+    "contact": "+57 315 444 7766",
+    "text": "Quisiera una cita lo antes posible, no importa el día ni la hora"
+  },
+  {
+    "client_name": "Kevin T.",
+    "contact": "+57 320 111 3344",
+    "text": "Puedo ir el viernes a las 10am?"
+  }
+]
