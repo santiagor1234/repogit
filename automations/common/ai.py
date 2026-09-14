@@ -6,6 +6,7 @@ por plantilla. Así las demos siempre corren "out of the box" sin necesidad
 de configurar nada, y mejoran solas si hay una key disponible.
 """
 import os
+import time
 
 import requests
 from dotenv import load_dotenv
@@ -36,6 +37,11 @@ def is_live() -> bool:
     return _detect_provider() != "none"
 
 
+def provider_label() -> str:
+    """Nombre legible del proveedor de IA activo, para mensajes de estado en las demos."""
+    return {"gemini": "Gemini", "openai": "OpenAI", "none": "sin API key"}[_detect_provider()]
+
+
 def _complete_gemini(prompt: str, system: str, model: str) -> str:
     # API REST directa (en vez del SDK) para no depender de compilar paquetes
     # nativos (grpc/cryptography) que no tienen wheel prearmado en este entorno.
@@ -44,15 +50,23 @@ def _complete_gemini(prompt: str, system: str, model: str) -> str:
         "contents": [{"parts": [{"text": prompt}]}],
         "systemInstruction": {"parts": [{"text": system}]},
     }
-    response = requests.post(
-        url,
-        params={"key": os.getenv("GEMINI_API_KEY")},
-        json=payload,
-        timeout=30,
-    )
-    response.raise_for_status()
-    data = response.json()
-    return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+    last_error = None
+    for attempt in range(3):
+        if attempt > 0:
+            time.sleep(2 * attempt)  # el tier gratis limita ráfagas de llamadas; reintentar con backoff
+        response = requests.post(
+            url,
+            params={"key": os.getenv("GEMINI_API_KEY")},
+            json=payload,
+            timeout=30,
+        )
+        if response.status_code in (429, 503):
+            last_error = requests.exceptions.HTTPError(f"{response.status_code} {response.reason}", response=response)
+            continue
+        response.raise_for_status()
+        data = response.json()
+        return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+    raise last_error
 
 
 def _complete_openai(prompt: str, system: str, model: str) -> str:
@@ -79,7 +93,7 @@ def complete(prompt: str, fallback: str, system: str = "Eres un asistente concis
         return fallback
     try:
         if provider == "gemini":
-            return _complete_gemini(prompt, system, model or "gemini-2.0-flash")
+            return _complete_gemini(prompt, system, model or "gemini-flash-lite-latest")
         return _complete_openai(prompt, system, model or "gpt-4o-mini")
     except Exception as exc:  # API caída, rate limit, sin créditos, etc. -> no romper la demo
         print(f"  [aviso] fallo llamando a {provider}, usando fallback: {exc}")

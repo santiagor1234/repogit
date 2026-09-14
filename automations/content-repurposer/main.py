@@ -23,7 +23,7 @@ from datetime import datetime
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
-from common.ai import complete, is_live  # noqa: E402
+from common.ai import complete, is_live, provider_label  # noqa: E402
 
 OUTPUT_DIR = Path(__file__).parent / "output"
 IDEAS_MD = Path(__file__).resolve().parents[2] / "content" / "ideas.md"
@@ -126,7 +126,7 @@ def main():
     timestamps = estimate_timestamps(sentences)
     moments = pick_top_moments(sentences, timestamps, args.clips)
 
-    mode = "IA real (OpenAI)" if is_live() else "modo demo (sin API key, hooks/captions por plantilla)"
+    mode = f"IA real ({provider_label()})" if is_live() else "modo demo (sin API key, hooks/captions por plantilla)"
     print(f"Content Repurposer — {mode}")
     print(f"Transcript: {transcript_path.name} ({len(sentences)} oraciones) -> {len(moments)} clips sugeridos")
     print("=" * 60)

@@ -24,7 +24,7 @@ from pathlib import Path
 from faker import Faker
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
-from common.ai import complete, is_live  # noqa: E402
+from common.ai import complete, is_live, provider_label  # noqa: E402
 from niches import pain_point_for  # noqa: E402
 
 DB_PATH = Path(__file__).parent / "leads.db"
@@ -95,7 +95,7 @@ def main():
     parser.add_argument("--count", type=int, default=8)
     args = parser.parse_args()
 
-    mode = "IA real (OpenAI)" if is_live() else "modo demo (sin API key, mensajes por plantilla)"
+    mode = f"IA real ({provider_label()})" if is_live() else "modo demo (sin API key, mensajes por plantilla)"
     print(f"AI Lead Finder + Outreach — {mode}")
     print(f"Nicho: {args.niche} | Ciudad: {args.city} | Leads: {args.count}")
     print("=" * 60)

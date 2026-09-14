@@ -22,7 +22,7 @@ from datetime import datetime
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
-from common.ai import complete, is_live  # noqa: E402
+from common.ai import complete, is_live, provider_label  # noqa: E402
 
 DB_PATH = Path(__file__).parent / "leads.db"
 
@@ -101,7 +101,7 @@ def main():
     messages = json.loads(messages_path.read_text())
 
     conn = ensure_db()
-    mode = "IA real (OpenAI)" if is_live() else "modo demo (sin API key, respuestas por plantilla)"
+    mode = f"IA real ({provider_label()})" if is_live() else "modo demo (sin API key, respuestas por plantilla)"
     print(f"AI DM Auto-Responder — {mode}\n{'=' * 60}")
 
     leads_saved = 0
