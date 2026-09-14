@@ -32,3 +32,7 @@ python automations/pedidos-catalogo/main.py
 ```
 
 Cada demo tiene su propio `README.md` con el detalle de cómo llevarla a producción con un cliente real.
+
+## Probar con un chat real
+
+`automations/telegram-bot/` conecta la misma lógica de `ai-dm-autoresponder` a un bot de Telegram de verdad (setup en su README, vía @BotFather, sin necesidad de servidor público). Es el paso intermedio antes de WhatsApp real: mismo motor, canal real, cero fricción de configuración.

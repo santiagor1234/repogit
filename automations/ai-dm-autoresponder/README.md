@@ -18,6 +18,10 @@ Sin `OPENAI_API_KEY` configurada corre en modo plantilla (igual de demostrable).
 
 Los leads quedan en `leads.db` (SQLite), tabla `leads`.
 
+## Probarlo con un chat real (no simulado)
+
+Ver `automations/telegram-bot/` — es la misma lógica de este demo (comparten `common/inbox.py`), pero conectada a un bot de Telegram real que podés probar desde tu celular en minutos, sin necesitar aprobación de negocio ni exponer un servidor.
+
 ## Llevarlo a producción con un cliente
 
 - Reemplazar `sample_messages.json` por el webhook real:
