@@ -13,113 +13,34 @@ como agendar (mejor que falle claro a que "alucine" un horario).
 Uso:
     python main.py
 
-En producción, `sample_requests.json` se reemplaza por el webhook real de
-WhatsApp/Instagram, y el calendario (`slots`) se sincroniza con Google
-Calendar/Calendly en vez de vivir solo en SQLite.
+Esta es la versión "de un solo mensaje" (simulada, para ver el resultado
+rápido). La versión conversacional real (que recuerda la preferencia de
+fecha/hora entre varios mensajes) está en `automations/telegram-bot/` —
+ambas comparten la misma lógica en `common/appointments.py`.
 """
 import json
-import sqlite3
-import sys
-from datetime import date, datetime, timedelta
+from datetime import date
 from pathlib import Path
+import sys
 
-sys.path.append(str(Path(__file__).parent))
-from parsing import parse_preferred_date, parse_preferred_time, format_date_es  # noqa: E402
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+from common.appointments import (  # noqa: E402
+    book_slot,
+    ensure_appointments_db,
+    find_best_slot,
+    format_date_es,
+    parse_preferred_date,
+    parse_preferred_time,
+)
 
 DB_PATH = Path(__file__).parent / "citas.db"
-BUSINESS_HOURS = range(9, 17)  # 9am a 4pm (última cita 16:00)
-DAYS_AHEAD_TO_SEED = 14
-
-
-def ensure_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS slots (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            date TEXT,
-            time TEXT,
-            available INTEGER DEFAULT 1
-        )
-        """
-    )
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS appointments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            client_name TEXT,
-            contact TEXT,
-            date TEXT,
-            time TEXT,
-            original_message TEXT,
-            created_at TEXT
-        )
-        """
-    )
-    conn.commit()
-
-    count = conn.execute("SELECT COUNT(*) FROM slots").fetchone()[0]
-    if count == 0:
-        seed_slots(conn)
-    return conn
-
-
-def seed_slots(conn):
-    today = date.today()
-    for i in range(1, DAYS_AHEAD_TO_SEED + 1):
-        d = today + timedelta(days=i)
-        if d.weekday() >= 5:  # sábado/domingo: cerrado
-            continue
-        for hour in BUSINESS_HOURS:
-            conn.execute(
-                "INSERT INTO slots (date, time, available) VALUES (?, ?, 1)",
-                (d.isoformat(), f"{hour:02d}:00"),
-            )
-    conn.commit()
-
-
-def find_best_slot(conn, preferred_date, preferred_time):
-    query = "SELECT id, date, time FROM slots WHERE available = 1"
-    params = []
-    if preferred_date:
-        query += " AND date >= ?"
-        params.append(preferred_date.isoformat())
-    query += " ORDER BY date, time"
-    rows = conn.execute(query, params).fetchall()
-    if not rows:
-        return None
-
-    if preferred_date:
-        same_day = [r for r in rows if r[1] == preferred_date.isoformat()]
-        candidates = same_day if same_day else rows
-    else:
-        candidates = rows
-
-    if preferred_time:
-        target_minutes = preferred_time.hour * 60 + preferred_time.minute
-        candidates = sorted(
-            candidates,
-            key=lambda r: abs(int(r[2][:2]) * 60 - target_minutes),
-        )
-
-    return candidates[0]
-
-
-def book_slot(conn, slot, client_name, contact, message):
-    slot_id, slot_date, slot_time = slot
-    conn.execute("UPDATE slots SET available = 0 WHERE id = ?", (slot_id,))
-    conn.execute(
-        "INSERT INTO appointments (client_name, contact, date, time, original_message, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-        (client_name, contact, slot_date, slot_time, message, datetime.now().isoformat()),
-    )
-    conn.commit()
 
 
 def main():
     requests_path = Path(__file__).parent / "sample_requests.json"
     requests_data = json.loads(requests_path.read_text(encoding="utf-8"))
 
-    conn = ensure_db()
+    conn = ensure_appointments_db(DB_PATH)
     print("Agendamiento de citas automático (100% basado en reglas, sin IA)")
     print("=" * 60)
 

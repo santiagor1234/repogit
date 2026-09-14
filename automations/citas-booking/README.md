@@ -18,6 +18,10 @@ python main.py
 
 Genera un calendario de disponibilidad de las próximas 2 semanas (lunes a viernes, 9am-4pm) en `citas.db`, y agenda las 4 solicitudes de `sample_requests.json` según lo que cada cliente pidió (día específico, "mañana", "lo antes posible", etc.).
 
+## Probarlo con un chat real (no simulado)
+
+Ver `automations/telegram-bot/` — si el cliente no dice el día en el primer mensaje, el bot se lo pregunta y espera la respuesta en el siguiente mensaje (acá, en cambio, cada solicitud se procesa de una sola vez). Comparte el mismo calendario (`citas.db`), así que no hay doble-booking entre ambas.
+
 ## Llevarlo a producción con un cliente
 
 - Reemplazar `sample_requests.json` por el webhook real de WhatsApp/Instagram.

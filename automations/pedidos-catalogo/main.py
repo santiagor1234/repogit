@@ -13,79 +13,26 @@ ninguna IA ni tiene costo por mensaje.
 Uso:
     python main.py
 
-En producción, `sample_orders.json` se reemplaza por el webhook real de
-WhatsApp/Instagram, y `catalog.py` se sincroniza con el inventario real
-del negocio (o se lee directo de una tabla `products` en la base de datos).
+Esta es la versión "de un solo mensaje" (simulada, para ver el resultado
+rápido). La versión conversacional real (que recuerda el carrito entre
+varios mensajes) está en `automations/telegram-bot/` — ambas comparten
+la misma lógica en `common/orders.py`.
 """
 import json
-import sqlite3
 import sys
-from datetime import datetime
 from pathlib import Path
 
-sys.path.append(str(Path(__file__).parent))
-from catalog import CATALOG  # noqa: E402
-from parsing import parse_order  # noqa: E402
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+from common.orders import CATALOG, ensure_orders_db, parse_order, save_order, format_money  # noqa: E402
 
 DB_PATH = Path(__file__).parent / "pedidos.db"
-
-
-def ensure_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS orders (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            client_name TEXT,
-            contact TEXT,
-            total INTEGER,
-            original_message TEXT,
-            created_at TEXT
-        )
-        """
-    )
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS order_items (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            order_id INTEGER,
-            product TEXT,
-            quantity INTEGER,
-            unit_price INTEGER,
-            subtotal INTEGER,
-            FOREIGN KEY (order_id) REFERENCES orders (id)
-        )
-        """
-    )
-    conn.commit()
-    return conn
-
-
-def save_order(conn, client_name, contact, message, items):
-    total = sum(i["subtotal"] for i in items)
-    cursor = conn.execute(
-        "INSERT INTO orders (client_name, contact, total, original_message, created_at) VALUES (?, ?, ?, ?, ?)",
-        (client_name, contact, total, message, datetime.now().isoformat()),
-    )
-    order_id = cursor.lastrowid
-    for item in items:
-        conn.execute(
-            "INSERT INTO order_items (order_id, product, quantity, unit_price, subtotal) VALUES (?, ?, ?, ?, ?)",
-            (order_id, item["product"], item["quantity"], item["unit_price"], item["subtotal"]),
-        )
-    conn.commit()
-    return order_id, total
-
-
-def format_money(amount: int) -> str:
-    return f"${amount:,.0f}".replace(",", ".")
 
 
 def main():
     orders_path = Path(__file__).parent / "sample_orders.json"
     incoming = json.loads(orders_path.read_text(encoding="utf-8"))
 
-    conn = ensure_db()
+    conn = ensure_orders_db(DB_PATH)
     print("Toma de pedidos automática (100% basado en reglas, sin IA)")
     print(f"Catálogo: {', '.join(p['name'] for p in CATALOG)}")
     print("=" * 60)

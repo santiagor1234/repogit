@@ -1,15 +1,31 @@
-# Bot de Telegram (prueba real del DM Auto-Responder)
+# Bot de Telegram (prueba real de pedidos, citas y atención)
 
-La versión "en vivo" de `ai-dm-autoresponder`, para probar desde tu celular sin necesidad de exponer un servidor a internet. Usa la misma lógica de clasificación + respuesta (`common/inbox.py`), conectada a un bot de Telegram real vía long polling.
+La versión "en vivo" de las tres demos de mensajería (`ai-dm-autoresponder`, `pedidos-catalogo`, `citas-booking`), unificadas en un solo bot que **recuerda la conversación** — a diferencia de la primera versión, que trataba cada mensaje aislado y perdía el hilo (ej. clasificaba "2 empanadas y un café" como spam si no venía justo después de decir "quiero pedir").
 
-**Por qué Telegram para probar (y no WhatsApp directo):**
-- No requiere verificación de negocio ni cuenta de WhatsApp Business API.
-- No necesita webhook/servidor público (usa "long polling": el bot pregunta por mensajes nuevos, en vez de que Telegram le avise a una URL pública).
-- Se crea un bot gratis en menos de 2 minutos.
+- `router.py` — decide si el mensaje es un pedido, una cita, o atención general, y mantiene el flujo activo entre mensajes usando `sessions.py` (memoria por chat).
+- `bot.py` — conecta ese router a Telegram real vía long polling (no necesita servidor público ni webhook).
+- Reutiliza `common/orders.py`, `common/appointments.py` y `common/inbox.py` — la misma lógica que ya prueban las demos simuladas.
 
-Cuando quieras el canal real (WhatsApp), la migración es sencilla: la lógica de negocio (`common/inbox.py`) no cambia — solo se reemplaza esta capa de "recibir/enviar mensaje" por la API de WhatsApp (Twilio o Meta). Ver sección final.
+**Por qué Telegram para probar (y no WhatsApp directo):** no requiere verificación de negocio, no necesita servidor público, y se crea un bot gratis en menos de 2 minutos. Cuando quieras el canal real, la migración es sencilla (ver el final de este archivo) — el router no cambia, solo cómo entra y sale el mensaje.
 
-## Setup (una sola vez)
+## Cómo funciona la conversación
+
+- **Pedido:** decís "quiero hacer un pedido" (te muestra el menú) o directo lo que querés con cantidad, ej. "2 empanadas y un café" (lo agrega al carrito sin preguntar nada más). Podés seguir agregando en varios mensajes; el bot recuerda el carrito. Escribí **"eso es todo"** para confirmar y guardar el pedido.
+- **Cita:** decís "quiero agendar una cita" (o "agendar"/"turno"/"reservar hora"). Si no decís cuándo, te pregunta el día; en cuanto detecta una fecha (y opcionalmente hora), busca el espacio libre más cercano y agenda — sin doble-booking, porque usa el mismo calendario (`citas-booking/citas.db`) que la demo simulada.
+- **Cualquier otra cosa:** cae en atención general (clasifica lead/pregunta/spam y responde con IA), igual que `ai-dm-autoresponder`.
+- **"cancelar"** en cualquier momento aborta el pedido/cita en curso.
+
+## Probarlo sin Telegram (más rápido para iterar)
+
+```bash
+cd automations/telegram-bot
+source ../../venv/bin/activate
+python router.py
+```
+
+Te deja escribir mensajes directo en la terminal como si fueras el cliente, sin necesitar un bot real. Útil para probar el flujo de pedidos/citas rápido antes de conectar Telegram.
+
+## Setup del bot real (una sola vez)
 
 1. Abre Telegram y busca **@BotFather**.
 2. Envíale `/newbot` y seguí las instrucciones (nombre del bot + un username que termine en `bot`, ej. `mi_negocio_bot`).
@@ -18,11 +34,7 @@ Cuando quieras el canal real (WhatsApp), la migración es sencilla: la lógica d
    ```
    ! open -e /Users/santiagorodriguezmartinez/automatizaciones-project/.env
    ```
-   Agrega la línea:
-   ```
-   TELEGRAM_BOT_TOKEN=tu_token_aqui
-   BUSINESS_NAME=Nombre de tu negocio de prueba
-   ```
+   Completa: `TELEGRAM_BOT_TOKEN=tu_token_aqui`
 
 ## Correr el bot
 
@@ -32,15 +44,17 @@ source ../../venv/bin/activate
 python bot.py
 ```
 
-Vas a ver en la terminal: `Bot de Telegram — IA real (Gemini)`. Ahora buscá tu bot en Telegram (por el username que le pusiste) y escribile cualquier mensaje, como si fueras un cliente. La respuesta te llega al chat de Telegram al instante, y en la terminal ves la clasificación (lead/pregunta/spam) en tiempo real.
+Buscá tu bot en Telegram (por el username) y escribile `/start` para ver el menú de opciones, o directo pedile algo. Los pedidos y citas quedan en las mismas bases de datos que las demos simuladas (`pedidos-catalogo/pedidos.db`, `citas-booking/citas.db`), así que se pueden revisar igual con `sqlite3`.
 
-Los leads quedan guardados en `leads.db` (tabla `leads`), igual que en la demo simulada.
+## Limitaciones conocidas de esta versión de prueba
+
+- La memoria de conversación es en RAM: si reiniciás el bot (`Ctrl+C` y volver a correr), se pierde el estado de conversaciones en curso (no los pedidos/citas ya confirmados, esos quedan en SQLite).
+- La detección de "quiero pedir X" sin decir antes "pedido" requiere que menciones una cantidad explícita (ej. "2 empanadas"), para evitar falsos positivos con palabras del catálogo que se usan en otro contexto (ej. "tengo un café" hablando de tu propio negocio).
+- "cita"/"agendar"/"turno"/"reservar hora" son las palabras que activan el flujo de citas — mencionar una hora suelta (ej. "abro de 8 am a 7 pm") no lo activa, a propósito, para no confundir una descripción de horario con un pedido de cita.
 
 ## Llevarlo a WhatsApp real
 
-Cuando quieras el canal de verdad para un cliente:
-
-- **Twilio WhatsApp Sandbox** (rápido para seguir probando, aún sin aprobación de Meta): reemplazar `get_updates`/`send_message` por el webhook de Twilio (recibe por HTTP en vez de polling) y `client.messages.create(...)` para enviar. Ahí sí se necesita un servidor público (ngrok para desarrollo, o un hosting real para producción).
+- **Twilio WhatsApp Sandbox** (rápido para seguir probando, aún sin aprobación de Meta): reemplazar `get_updates`/`send_message` de `bot.py` por el webhook de Twilio (recibe por HTTP en vez de polling) y `client.messages.create(...)` para enviar. Ahí sí se necesita un servidor público (ngrok para desarrollo, hosting real para producción).
 - **Meta WhatsApp Business Platform** (para producción con un cliente real): requiere verificación del negocio, pero es la opción "oficial" y sin intermediario.
 
-En ambos casos, `common/inbox.py` (clasificar + redactar respuesta) se reutiliza tal cual — solo cambia cómo entra y sale el mensaje.
+En ambos casos, `router.py` (toda la lógica de negocio) se reutiliza tal cual — solo cambia cómo entra y sale el mensaje.

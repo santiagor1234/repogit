@@ -1,60 +1,48 @@
 """
-Bot de Telegram — versión real (no simulada) del AI DM Auto-Responder.
+Bot de Telegram — versión real (no simulada) de las automatizaciones de
+atención, pedidos y citas.
 
-Usa la misma lógica de clasificación + respuesta de `common/inbox.py`,
-pero conectada a un bot de Telegram de verdad vía long polling (el bot
-pregunta por mensajes nuevos cada cierto tiempo, así que no necesita un
-servidor público ni webhook — ideal para probar desde tu celular ahora
-mismo, antes de portar esto a WhatsApp Business API).
+Usa `router.py` (que mantiene memoria de conversación por chat) conectado
+a un bot de Telegram real vía long polling — el bot pregunta por mensajes
+nuevos cada cierto tiempo, así que no necesita servidor público ni
+webhook. Ideal para probar desde tu celular antes de portar esto a
+WhatsApp Business API.
 
 Setup:
     1. En Telegram, habla con @BotFather -> /newbot -> seguí las instrucciones.
     2. Copiá el token que te da y pegalo en .env como TELEGRAM_BOT_TOKEN=...
-    3. (Opcional) Poné BUSINESS_NAME=Tu Negocio en .env.
-    4. python bot.py
-    5. Buscá tu bot en Telegram (el username que le pusiste) y escribile.
+    3. python bot.py
+    4. Buscá tu bot en Telegram (el username que le pusiste) y escribile.
 
 Ctrl+C para detenerlo.
 """
 import os
-import sqlite3
 import sys
 import time
-from datetime import datetime
 from pathlib import Path
 
 import requests
 from dotenv import load_dotenv
 
+sys.path.append(str(Path(__file__).parent))
+from router import handle_message  # noqa: E402
+from sessions import reset_session  # noqa: E402
+
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 from common.ai import is_live, provider_label  # noqa: E402
-from common.inbox import classify, draft_reply  # noqa: E402
 
 load_dotenv()
 
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 API_URL = f"https://api.telegram.org/bot{TOKEN}"
-BUSINESS_NAME = os.getenv("BUSINESS_NAME", "Mi Negocio")
-DB_PATH = Path(__file__).parent / "leads.db"
 
-
-def ensure_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS leads (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            business TEXT,
-            platform TEXT,
-            sender TEXT,
-            message TEXT,
-            reply TEXT,
-            created_at TEXT
-        )
-        """
-    )
-    conn.commit()
-    return conn
+WELCOME = (
+    "¡Hola! 👋 Puedo ayudarte a:\n"
+    "  • Hacer un pedido (escribí 'quiero hacer un pedido' o directo lo que querés, ej. '2 empanadas y un café')\n"
+    "  • Agendar una cita (escribí 'quiero agendar una cita')\n"
+    "  • Responder cualquier otra pregunta sobre el negocio\n\n"
+    "¿En qué te ayudo?"
+)
 
 
 def get_updates(offset=None):
@@ -75,10 +63,8 @@ def main():
         print("Falta TELEGRAM_BOT_TOKEN en .env. Mirá el README.md de esta carpeta para crear el bot con @BotFather.")
         return
 
-    conn = ensure_db()
     mode = f"IA real ({provider_label()})" if is_live() else "modo demo (sin API key, respuestas por plantilla)"
     print(f"Bot de Telegram — {mode}")
-    print(f"Negocio simulado: {BUSINESS_NAME}")
     print("Buscá tu bot en Telegram y escribile. Ctrl+C para detener.\n")
 
     offset = None
@@ -98,22 +84,19 @@ def main():
 
             chat_id = message["chat"]["id"]
             sender = message["from"].get("first_name", "Cliente")
+            contact = message["from"].get("username") or f"telegram:{chat_id}"
             text = message["text"]
 
             print(f"{sender}: {text}")
-            label = classify(text)
-            reply = draft_reply(BUSINESS_NAME, sender, text, label)
-            print(f"  -> {label.upper()}")
+
+            if text.strip() == "/start":
+                reset_session(chat_id)
+                reply = WELCOME
+            else:
+                reply = handle_message(chat_id, sender, contact, text)
+
             print(f"  Bot: {reply}\n")
-
             send_message(chat_id, reply)
-
-            if label == "lead":
-                conn.execute(
-                    "INSERT INTO leads (business, platform, sender, message, reply, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-                    (BUSINESS_NAME, "Telegram", sender, text, reply, datetime.now().isoformat()),
-                )
-                conn.commit()
 
 
 if __name__ == "__main__":
