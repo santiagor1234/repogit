@@ -1,6 +1,7 @@
 """Narración por voz con Gemini TTS (texto -> audio)."""
 import base64
 import os
+import time
 import wave
 from pathlib import Path
 
@@ -28,8 +29,19 @@ def synthesize(text: str, out_path: Path, voice: str = DEFAULT_VOICE, model: str
             "speechConfig": {"voiceConfig": {"prebuiltVoiceConfig": {"voiceName": voice}}},
         },
     }
-    response = requests.post(url, params={"key": api_key}, json=payload, timeout=60)
-    response.raise_for_status()
+    last_error = None
+    for attempt in range(3):
+        if attempt > 0:
+            time.sleep(2)
+        try:
+            response = requests.post(url, params={"key": api_key}, json=payload, timeout=60)
+            response.raise_for_status()
+            break
+        except requests.exceptions.RequestException as exc:
+            last_error = exc
+    else:
+        raise last_error
+
     data = response.json()
     part = data["candidates"][0]["content"]["parts"][0]["inlineData"]
     audio_bytes = base64.b64decode(part["data"])
