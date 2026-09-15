@@ -87,7 +87,7 @@ def set_caption(page, text: str):
     )
 
 
-def record_chat_intro(business: str, video_dir: Path, min_duration: float) -> Path:
+def record_chat_intro(business: str, hook_text: str, video_dir: Path, min_duration: float) -> Path:
     """Simula la conversación de chat (mensaje del cliente, menú, toque en
     'Agendar cita') y la graba. `min_duration` asegura que el clip dure al
     menos lo que tarda la narración, para no cortarla."""
@@ -108,7 +108,9 @@ def record_chat_intro(business: str, video_dir: Path, min_duration: float) -> Pa
             elapsed += ms
 
         page.goto(f"file://{CHAT_TEMPLATE}?business={quote(business)}", wait_until="load")
-        wait(700)
+        page.evaluate("(t) => showHook(t)", hook_text)
+        wait(2800)
+        page.evaluate("hideHook()")
 
         page.evaluate("addMessage('Hola', 'out')")
         wait(900)
@@ -160,12 +162,13 @@ def record_booking_flow(business: str, phone: str, address: str, base_url: str, 
             elapsed += ms
 
         page.goto(booking_url, wait_until="load")
+        page.evaluate("() => { var f = document.querySelector('footer'); if (f) f.style.visibility = 'hidden'; }")
         set_caption(page, f"Así se ve la reserva para {business}")
-        wait(2000)
+        wait(2600)
 
         page.click(".service-card")
         set_caption(page, "El cliente elige el servicio...")
-        wait(1400)
+        wait(2000)
 
         page.click("#btn-to-2")
         set_caption(page, "...y el día y la hora que más le convengan")
@@ -174,19 +177,19 @@ def record_booking_flow(business: str, phone: str, address: str, base_url: str, 
 
         page.wait_for_selector(".time-chip:not([disabled])", timeout=COLD_START_TIMEOUT)
         page.click(".time-chip:not([disabled]) >> nth=0")
-        wait(1200)
+        wait(2000)
 
         page.click("#btn-to-3")
         set_caption(page, "Completa sus datos...")
         page.fill("#input-name", "Cliente Demo")
         page.fill("#input-phone", "300 000 0000")
-        wait(1400)
+        wait(2000)
 
         set_caption(page, "...y listo")
         page.click("#btn-confirm")
         page.wait_for_selector("#step-4:not([hidden])", timeout=COLD_START_TIMEOUT)
         set_caption(page, "¡Cita confirmada automáticamente! 🙌")
-        wait(2500)
+        wait(3000)
 
         remaining = min_duration * 1000 - elapsed
         if remaining > 0:
@@ -199,24 +202,35 @@ def record_booking_flow(business: str, phone: str, address: str, base_url: str, 
     return video_path
 
 
+def hook_text(business: str) -> str:
+    """Texto grande en pantalla en los primeros ~3 segundos -- corto, para
+    que se lea rápido, con el gancho antes que cualquier otra cosa."""
+    return f"{business} responde solo, 24/7. Mirá cómo 👇"
+
+
 def chat_narration_text(business: str) -> str:
     return (
-        f"Un cliente le escribe a {business} preguntando por una cita. "
-        "En segundos, el bot responde con un menú: agendar cita, ver servicios, "
-        "el horario, o la ubicación. El cliente toca 'agendar cita', y listo."
+        f"¡Mirá esto! {business} acaba de recibir un cliente, y lo atendió solo, "
+        "sin que nadie contestara un mensaje. El cliente escribe, y en segundos "
+        "aparece un menú: agendar cita, servicios, horario, o ubicación. "
+        "Toca 'agendar cita'... ¡y sigue el proceso!"
     )
 
 
 def booking_narration_text(business: str) -> str:
     return (
-        "Ahí elige el servicio que necesita, el día y la hora que más le convengan, "
-        "completa su nombre y su teléfono, y confirma. En segundos queda la cita "
-        "registrada, con un código de confirmación real -- sin que nadie del "
-        "negocio haya tenido que contestar un solo mensaje."
+        "¡Ahí elige el servicio, el día y la hora que más le convengan, completa "
+        "sus datos, y confirma! En segundos queda la cita registrada, con un "
+        "código de confirmación real, sin que nadie del negocio haya tenido "
+        "que mover un dedo."
     )
 
 
 def mux(video_path: Path, audio_path, out_path: Path):
+    """Nunca recorta el video: si la narración termina antes de que acabe la
+    grabación (por ejemplo, si un paso tardó más de lo esperado por la red),
+    el video sigue hasta su duración real -- perderse el desenlace (la cita
+    confirmada) es mucho peor que unos segundos de silencio al final."""
     ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
     if audio_path:
         cmd = [
@@ -225,7 +239,6 @@ def mux(video_path: Path, audio_path, out_path: Path):
             "-i", str(audio_path),
             "-c:v", "libx264", "-pix_fmt", "yuv420p",
             "-c:a", "aac",
-            "-shortest",
             str(out_path),
         ]
     else:
@@ -278,7 +291,7 @@ def main():
     wake_up(args.url)  # antes de grabar nada, para que Render no muestre su pantalla de "despertando"
 
     print(f"Grabando simulación de chat para '{args.business}'...")
-    chat_video = record_chat_intro(args.business, work_dir / "chat", chat_min_dur)
+    chat_video = record_chat_intro(args.business, hook_text(args.business), work_dir / "chat", chat_min_dur)
 
     print("Grabando flujo de reserva...")
     booking_video = record_booking_flow(args.business, args.phone, args.address, args.url, work_dir / "booking", booking_min_dur)

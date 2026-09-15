@@ -2,3 +2,4 @@ playwright
 imageio-ffmpeg
 requests
 python-dotenv
+edge-tts

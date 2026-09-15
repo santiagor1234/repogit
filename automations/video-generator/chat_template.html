@@ -79,9 +79,22 @@
     transition: transform 0.15s, background 0.15s, border-color 0.15s;
   }
   .menu-btn.pressed { background: var(--accent); border-color: var(--accent); color: #fff; transform: scale(0.96); }
+
+  #hook-overlay {
+    position: fixed; inset: 0; background: var(--accent); z-index: 9999999;
+    display: flex; align-items: center; justify-content: center; padding: 28px;
+    text-align: center;
+  }
+  #hook-text {
+    font-size: 27px; font-weight: 800; color: #fff; line-height: 1.32;
+    text-wrap: balance;
+  }
 </style>
 </head>
 <body>
+  <div id="hook-overlay">
+    <div id="hook-text"></div>
+  </div>
   <div class="status-bar"></div>
   <div class="chat-header">
     <div class="avatar" id="avatar">🏢</div>
@@ -138,6 +151,15 @@
     window.pressCita = function () {
       var btn = document.getElementById('btn-cita');
       if (btn) btn.classList.add('pressed');
+    };
+
+    window.showHook = function (text) {
+      document.getElementById('hook-text').textContent = text;
+    };
+
+    window.hideHook = function () {
+      var el = document.getElementById('hook-overlay');
+      if (el) el.remove();
     };
   </script>
 </body>

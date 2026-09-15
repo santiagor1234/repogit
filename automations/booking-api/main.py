@@ -30,6 +30,7 @@ En producción (Render, etc.) el comando de arranque es:
 import hashlib
 import os
 import sqlite3
+import threading
 from datetime import date as date_cls, datetime, timedelta
 from pathlib import Path
 
@@ -167,19 +168,26 @@ def create_booking(b: BookingIn):
     )
     conn.commit()
 
-    push_to_sheet(
-        {
-            "date": b.date,
-            "time": b.time,
-            "service": b.service,
-            "client_name": b.client_name,
-            "phone": b.phone,
-            "note": b.note,
-            "code": code,
-            "business": b.business,
-            "created_at": datetime.now().isoformat(),
-        }
-    )
+    # En un hilo aparte: el cliente no debe esperar a que Sheets responda
+    # para ver su cita confirmada. Sheets puede tardar varios segundos
+    # (cold start de Apps Script) y eso no debe demorar la respuesta real.
+    threading.Thread(
+        target=push_to_sheet,
+        args=(
+            {
+                "date": b.date,
+                "time": b.time,
+                "service": b.service,
+                "client_name": b.client_name,
+                "phone": b.phone,
+                "note": b.note,
+                "code": code,
+                "business": b.business,
+                "created_at": datetime.now().isoformat(),
+            },
+        ),
+        daemon=True,
+    ).start()
 
     return {"ok": True, "code": code}
 
